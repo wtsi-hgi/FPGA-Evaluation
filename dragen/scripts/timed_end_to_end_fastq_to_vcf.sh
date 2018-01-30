@@ -19,14 +19,16 @@ output_prefix="${3}"
 log_file="${4}"
 run_gatk="${5:-"false"}"
 
-if [ "${run_gatk}" == "true" ]; then
+if [[ "${run_gatk}" =~ 'true' ]]; then
   gatk=" GATK "
   first_stage="dragen-fastq_to_gvcf_gatk"
   second_stage="dragen-gvcf_to_vcf_gatk"
+  gatk_command="--vc-enable-gatk-acceleration true"
 else
   gatk=" "
   first_stage="dragen-fastq_to_gvcf"
   second_stage="dragen-gvcf_to_vcf"
+  gatk_command=" "
 fi
 
 # Dragen variables
@@ -44,7 +46,7 @@ file_date=$(date -u +"%Y%m%d")
 
 for sample in ${SAMPLES}; do 
   echo "Calling sample ${sample}" >> "${log_file}"
-  /usr/bin/time --append --output="${log_file}" -f "\n--------------------\nTimings for${gatk}FASTQ to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" --fastq-list "${fastq_list}" --fastq-list-sample-id "${sample}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" --vc-enable-gatk-acceleration ${run_gatk} --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.${first_stage}.${file_date}" --enable-duplicate-marking true
+  /usr/bin/time --append --output="${log_file}" -f "\n--------------------\nTimings for${gatk}FASTQ to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" --fastq-list "${fastq_list}" --fastq-list-sample-id "${sample}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" ${gatk_command} --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.${first_stage}.${file_date}" --enable-duplicate-marking true
 done
 
 run_end_time=$(date -u +"%s")
@@ -59,10 +61,10 @@ if [ -f ${gvcf_list} ]; then
   rm -f ${gvcf_list}
 fi
 
-for gvcf_file in $(ls ${output_dir} | egrep '*.gvcf.gz$' | egrep -v '*hard-filtered*'); do
-   if [[ "${run_gatk}" == "true" ]] && [[ "${gvcf_file}" =~ 'gatk' ]]; then
+for gvcf_file in $(ls ${output_dir} | egrep '*.gvcf.gz$' | egrep "${file_date}" |  egrep -v '*hard-filtered*'); do
+   if [[ "${run_gatk}" =~ 'true' ]] && [[ "${gvcf_file}" =~ 'gatk' ]]; then
      echo "${output_dir}/${gvcf_file}" >> "${gvcf_list}"
-   elif [[ "${run_gatk}" == "false" ]] && ! [[ "${gvcf_file}" =~ 'gatk'  ]]; then
+   elif [[ "${run_gatk}" =~ 'false' ]] && ! [[ "${gvcf_file}" =~ 'gatk'  ]]; then
      echo "${output_dir}/${gvcf_file}" >> "${gvcf_list}"
    fi  
 done

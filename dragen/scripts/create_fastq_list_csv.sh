@@ -23,8 +23,8 @@ fastq directory
   exit 1
 fi
 
-csv_file_name=$1
-fastq_directory=$2
+csv_file_name="${1}"
+fastq_directory="${2%/}"
 
 # Headers defined on the first row of the CSV
 echo "RGID,RGSM,RGLB,Lane,Read1File,Read2File" >  $csv_file_name

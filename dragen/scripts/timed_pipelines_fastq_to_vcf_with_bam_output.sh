@@ -6,7 +6,7 @@ set -euf -o pipefail
 
 # Check input and assign to vars
 if [ "${#@}" -lt 4 ]; then
-  echo "Usage: timed_fastq_to_bam.sh <fastq_list.csv> <output_dir> <output_file_prefix> <log_directory>
+  echo "Usage: timed_pipelines_fastq_to_vcf_with_bam_output.sh <fastq_list.csv> <output_dir> <output_file_prefix> <log_directory>
 All '<>' parameters must be supplied with full path names."
   exit 1
 fi

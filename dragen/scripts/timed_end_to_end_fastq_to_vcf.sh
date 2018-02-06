@@ -46,7 +46,7 @@ file_date=$(date -u +"%Y%m%d")
 
 for sample in ${SAMPLES}; do 
   echo "Calling sample ${sample}" >> "${log_file}"
-  /usr/bin/time --append --output="${log_file}" -f "\n--------------------\nTimings for${gatk}FASTQ to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" --fastq-list "${fastq_list}" --fastq-list-sample-id "${sample}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" ${gatk_command} --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.${first_stage}.${file_date}" --enable-duplicate-marking true
+  /usr/bin/time --append --output="${log_file}" -f "\n--------------------\nTimings for${gatk}FASTQ to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" --fastq-list "${fastq_list}" --fastq-list-sample-id "${sample}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" ${gatk_command} --intermediate-results-dir "/staging/tmp" --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.${first_stage}.${file_date}" --enable-duplicate-marking true
 done
 
 run_end_time=$(date -u +"%s")

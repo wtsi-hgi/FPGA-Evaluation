@@ -128,9 +128,9 @@ end_gvcf_time=$(date -u +"%s")
 
 end_gatk_time=$(date -u +"%s")
 
-total_joint_caller_elapsed_seconds=(( ${end_gatk_time} - ${joint_caller_start_time} ))
-gvcf_elapsed_seconds=(( ${end_gvcf_time} - ${joint_caller_start_time} ))
-gatk_elapsed_seconds=(( ${end_gatk_time} - ${end_gvcf_time} ))
+total_joint_caller_elapsed_seconds=$(( ${end_gatk_time} - ${joint_caller_start_time} ))
+gvcf_elapsed_seconds=$(( ${end_gvcf_time} - ${joint_caller_start_time} ))
+gatk_elapsed_seconds=$(( ${end_gatk_time} - ${end_gvcf_time} ))
 
 echo "${output_prefix} ${total_joint_caller_elapsed_seconds} ${gvcf_elapsed_seconds} ${gatk_elapsed_seconds}" >> "${joint_caller_log}"
 

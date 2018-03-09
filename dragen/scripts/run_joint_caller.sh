@@ -12,6 +12,7 @@ Run modes:
   none - run the standard Dragen joint caller
   gatk - run the gatk-accelerated joint caller
   both - run both standard and gatk-accelerated joint caller, one after the other."
+  exit 1
 fi
 
 gvcf_dir="${1%/}"

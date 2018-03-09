@@ -14,7 +14,7 @@ Run modes:
   both - run both standard and gatk-accelerated joint caller, one after the other."
 fi
 
-gvcf_dir="${1}"
+gvcf_dir="${1%/}"
 file_date="${2}"
 output_dir="${3%/}"
 output_prefix="${4}"

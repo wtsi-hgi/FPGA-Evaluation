@@ -51,6 +51,9 @@ printf "%s\n" "$(date)" >> "${total_timings_log}"
 SAMPLES=$(tail -n +2 "${fastq_list}" | awk 'BEGIN {FS=","} {print $2;}' | sort | uniq)
 
 file_date=$(date -u +"%Y%m%d")
+# Below is a handy little cheat if the dragen crashes partway through processing and you still want the joint caller to work on all files with the same date.
+# DO REMEMEBER to comment it out before committing to version control or for subsequent processing.
+#file_date="20180208"  
 
 # Create a directory for the bams
 bam_directory="${output_dir}/bam"
@@ -119,12 +122,12 @@ done
 joint_caller_start_time=$(date -u +"%s")
 
 # Run joint caller on non-gatk gVCFs
-/usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --variant-list ${gvcf_list} --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gvcf_to_vcf.${file_date}"
+/usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --variant-list ${gvcf_list} --intermediate-results-dir "/staging/tmp" --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gvcf_to_vcf.${file_date}"
 
 end_gvcf_time=$(date -u +"%s")
 
 # Run joint caller on gatk gVCFs
-/usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the GATK joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --variant-list ${gatk_list} --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gatk_gvcf_to_vcf.${file_date}"
+/usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the GATK joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --vc-enable-gatk-acceleration true --variant-list ${gatk_list} --intermediate-results-dir "/staging/tmp" --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gatk_gvcf_to_vcf.${file_date}"
 
 end_gatk_time=$(date -u +"%s")
 

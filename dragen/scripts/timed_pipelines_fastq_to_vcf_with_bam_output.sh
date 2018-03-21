@@ -6,8 +6,9 @@ set -euf -o pipefail
 
 # Check input and assign to vars
 if [ "${#@}" -lt 4 ]; then
-  echo "Usage: timed_pipelines_fastq_to_vcf_with_bam_output.sh <fastq_list.csv> <output_dir> <output_file_prefix> <log_directory>
-All '<>' parameters must be supplied with full path names."
+  echo "Usage: timed_pipelines_fastq_to_vcf_with_bam_output.sh <fastq_list.csv> <output_dir> <output_file_prefix> <log_directory> [run_joint_caller=true]
+All '<>' parameters must be supplied with full path names except for run_joint_caller which is set to 'true' by default.
+Set run_joint_caller to 'false' to not run the joint caller after gvcf generation"
   exit 1
 fi
 
@@ -15,6 +16,7 @@ fastq_list="${1}"
 output_dir="${2%/}"
 output_prefix="${3}"
 log_directory="${4%/}"
+run_joint_caller="${5:-true}"
 
 command_log="${log_directory}/command_timings.log"
 total_timings_log="${log_directory}/total_timings.log"
@@ -39,7 +41,7 @@ if [ -f "${total_timings_log}" ]; then
   echo "ERROR: Timing log ${total_timings_log} already exists."
   exit 1
 fi
-if [ -f "${joint_caller_log}" ]; then
+if [ -f "${joint_caller_log}" ] && [[ "${run_joint_caller}" =~ 'true' ]]; then
   echo "ERROR: Joint caller timing log ${joint_caller_log} already exists."
   exit 1
 fi
@@ -97,45 +99,47 @@ for sample in ${SAMPLES}; do
 
 done
 
-# Run the joint callers.
-echo "dataset total_joint_caller_elapsed_seconds gvcf_joint_caller_elapsed_seconds gatk_joint_caller_elapsed_seconds" >> "${joint_caller_log}"
+if [[ "${run_joint_caller}" =~ 'true' ]]; then
+  # Run the joint callers.
+  echo "dataset total_joint_caller_elapsed_seconds gvcf_joint_caller_elapsed_seconds gatk_joint_caller_elapsed_seconds" >> "${joint_caller_log}"
 
-# Need a list of all the gVCF's
-gvcf_list="${output_dir}/gVCF_list.txt"
-gatk_list="${output_dir}/gatk_list.txt"
+  # Need a list of all the gVCF's
+  gvcf_list="${output_dir}/gVCF_list.txt"
+  gatk_list="${output_dir}/gatk_list.txt"
 
-if [ -f ${gvcf_list} ]; then
-  rm -f ${gvcf_list}
+  if [ -f ${gvcf_list} ]; then
+    rm -f ${gvcf_list}
+  fi
+  if [ -f ${gatk_list} ]; then
+    rm -f ${gatk_list}
+  fi
+
+  for gvcf_file in $(ls ${output_dir} | egrep '*.gvcf.gz$' | egrep "${file_date}" |  egrep -v '*hard-filtered*'); do
+     if [[ "${gvcf_file}" =~ 'gatk' ]]; then
+       echo "${output_dir}/${gvcf_file}" >> "${gatk_list}"
+     elif ! [[ "${gvcf_file}" =~ 'gatk'  ]]; then
+       echo "${output_dir}/${gvcf_file}" >> "${gvcf_list}"
+     fi  
+  done
+
+  joint_caller_start_time=$(date -u +"%s")
+
+  # Run joint caller on non-gatk gVCFs
+  /usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --variant-list ${gvcf_list} --intermediate-results-dir "/staging/tmp" --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gvcf_to_vcf.${file_date}"
+
+  end_gvcf_time=$(date -u +"%s")
+
+  # Run joint caller on gatk gVCFs
+  /usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the GATK joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --vc-enable-gatk-acceleration true --variant-list ${gatk_list} --intermediate-results-dir "/staging/tmp" --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gatk_gvcf_to_vcf.${file_date}"
+
+  end_gatk_time=$(date -u +"%s")
+
+  total_joint_caller_elapsed_seconds=$(( ${end_gatk_time} - ${joint_caller_start_time} ))
+  gvcf_elapsed_seconds=$(( ${end_gvcf_time} - ${joint_caller_start_time} ))
+  gatk_elapsed_seconds=$(( ${end_gatk_time} - ${end_gvcf_time} ))
+
+  echo "${output_prefix} ${total_joint_caller_elapsed_seconds} ${gvcf_elapsed_seconds} ${gatk_elapsed_seconds}" >> "${joint_caller_log}"
 fi
-if [ -f ${gatk_list} ]; then
-  rm -f ${gatk_list}
-fi
-
-for gvcf_file in $(ls ${output_dir} | egrep '*.gvcf.gz$' | egrep "${file_date}" |  egrep -v '*hard-filtered*'); do
-   if [[ "${gvcf_file}" =~ 'gatk' ]]; then
-     echo "${output_dir}/${gvcf_file}" >> "${gatk_list}"
-   elif ! [[ "${gvcf_file}" =~ 'gatk'  ]]; then
-     echo "${output_dir}/${gvcf_file}" >> "${gvcf_list}"
-   fi  
-done
-
-joint_caller_start_time=$(date -u +"%s")
-
-# Run joint caller on non-gatk gVCFs
-/usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --variant-list ${gvcf_list} --intermediate-results-dir "/staging/tmp" --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gvcf_to_vcf.${file_date}"
-
-end_gvcf_time=$(date -u +"%s")
-
-# Run joint caller on gatk gVCFs
-/usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for the GATK joint caller\n--------------------\nCommand: %C\nJoint calling elapsed time = %E\nJoint calling elapsed real time = %e\nJoint calling exit status = %x\n" dragen -f -r "${REFDIR}" --enable-joint-genotyping true --vc-enable-gatk-acceleration true --variant-list ${gatk_list} --intermediate-results-dir "/staging/tmp" --output-directory ${output_dir} --output-file-prefix "${output_prefix}.gatk_gvcf_to_vcf.${file_date}"
-
-end_gatk_time=$(date -u +"%s")
-
-total_joint_caller_elapsed_seconds=$(( ${end_gatk_time} - ${joint_caller_start_time} ))
-gvcf_elapsed_seconds=$(( ${end_gvcf_time} - ${joint_caller_start_time} ))
-gatk_elapsed_seconds=$(( ${end_gatk_time} - ${end_gvcf_time} ))
-
-echo "${output_prefix} ${total_joint_caller_elapsed_seconds} ${gvcf_elapsed_seconds} ${gatk_elapsed_seconds}" >> "${joint_caller_log}"
 
 end_time=$(date -u +"%s")
 printf "\nTotal runtime: %s\n\n" $(date -u -d "0 ${end_time} seconds - ${start_time} seconds"  +"%H:%M:%S") >> "${command_log}"

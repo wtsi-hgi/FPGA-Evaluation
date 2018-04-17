@@ -81,12 +81,12 @@ for sample in ${SAMPLES}; do
   bam_file="${bam_directory}/${output_prefix}.${sample}.fastq_to_bam.${file_date}.bam"
 
   # BAM to gVCF
-  /usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for BAM to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" -b "${bam_file}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" --intermediate-results-dir "/staging/tmp" --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.bam_to_gvcf.${file_date}" --enable-duplicate-marking true
+  /usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for BAM to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" -b "${bam_file}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" --intermediate-results-dir "/staging/tmp" --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.bam_to_gvcf.${file_date}" --enable-map-align false
 
   gvcf_end_time=$(date -u +"%s")
 
   # GATK-accelerated BAM to gVCF
-  /usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for GATK BAM to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" -b "${bam_file}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" --vc-enable-gatk-acceleration true --intermediate-results-dir "/staging/tmp" --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.bam_to_gvcf_gatk.${file_date}" --enable-duplicate-marking true
+  /usr/bin/time --append --output="${command_log}" -f "\n--------------------\nTimings for GATK BAM to gVCF run\n--------------------\nCommand: %C\nRun elapsed time = %E\nRun elapsed real time = %e\nRun exit status = %x\n" dragen -f -r "${REFDIR}" -b "${bam_file}" --enable-variant-caller true --vc-reference "${VCREF}" --vc-sample-name "${sample}" --vc-emit-ref-confidence "GVCF" --vc-enable-gatk-acceleration true --intermediate-results-dir "/staging/tmp" --output-directory "${output_dir}" --output-file-prefix "${output_prefix}.${sample}.bam_to_gvcf_gatk.${file_date}" --enable-map-align false
 
   gatk_end_time=$(date -u +"%s")
 

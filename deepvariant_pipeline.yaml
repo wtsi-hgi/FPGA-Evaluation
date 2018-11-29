@@ -4,35 +4,35 @@ inputParameters:
   - name: OUTPUT_DIR
   - name: MODEL
   - name: DOCKER_IMAGE
-  - name: DOCKER_IMAGE_GPU
   - name: STAGING_FOLDER_NAME
   - name: OUTPUT_FILE_NAME
   - name: INPUT_BAM_FILE
+  - name: INPUT_BAI_FILE
   - name: INPUT_REF_FILE
   - name: JOB_NAME
 docker:
-  imageName: gcr.io/deepvariant-docker/deepvariant_runner
+  imageName: gcr.io/deepvariant-docker/deepvariant_runner:0.7.0
   cmd: |
-    ./opt/deepvariant_runner/bin/gcp_deepvariant_runner \
+    /opt/deepvariant_runner/bin/gcp_deepvariant_runner \
     --project "${PROJECT_ID}" \
-    --zones europe-west1-b europe-west1-d \
+    --zones europe-west1-* \
     --docker_image "${DOCKER_IMAGE}" \
-    --docker_image_gpu "${DOCKER_IMAGE_GPU}" \
-    --gpu \
     --outfile "${OUTPUT_DIR}/${OUTPUT_FILE_NAME}" \
     --staging "${OUTPUT_DIR}/${STAGING_FOLDER_NAME}" \
     --model "${MODEL}" \
     --bam "${INPUT_BAM_FILE}" \
+    --bai "${INPUT_BAI_FILE}" \
     --ref "${INPUT_REF_FILE}" \
     --shards 512 \
-    --make_examples_workers 16 \
-    --make_examples_cores_per_worker 32 \
+    --make_examples_workers 32 \
+    --make_examples_cores_per_worker 16 \
     --make_examples_ram_per_worker_gb 60 \
     --make_examples_disk_per_worker_gb 200 \
-    --call_variants_workers 16 \
-    --call_variants_cores_per_worker 8 \
-    --call_variants_ram_per_worker_gb 30 \
+    --call_variants_workers 32 \
+    --call_variants_cores_per_worker 32 \
+    --call_variants_ram_per_worker_gb 60 \
     --call_variants_disk_per_worker_gb 50 \
     --preemptible \
     --max_preemptible_tries 5 \
-    --job_name_prefix "${JOB_NAME}"
+    --job_name_prefix "${JOB_NAME}" \
+    --gcsfuse
